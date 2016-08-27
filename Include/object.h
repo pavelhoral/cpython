@@ -95,7 +95,7 @@ whose size is determined when the object is allocated.
  */
 #define PyObject_VAR_HEAD               \
     PyObject_HEAD                       \
-    Py_ssize_t ob_size; /* Number of items in variable part */
+    int ob_size; /* Number of items in variable part */
 #define Py_INVALID_SIZE (Py_ssize_t)-1
 
 /* Nothing is actually declared to be a PyObject, but every pointer to
@@ -324,7 +324,7 @@ typedef PyObject *(*allocfunc)(struct _typeobject *, Py_ssize_t);
 typedef struct _typeobject {
     PyObject_VAR_HEAD
     const char *tp_name; /* For printing, in format "<module>.<name>" */
-    Py_ssize_t tp_basicsize, tp_itemsize; /* For allocation */
+    int tp_basicsize, tp_itemsize; /* For allocation */
 
     /* Methods to implement standard operations */
 
@@ -399,9 +399,9 @@ typedef struct _typeobject {
 
 #ifdef COUNT_ALLOCS
     /* these must be last and never explicitly initialized */
-    Py_ssize_t tp_allocs;
-    Py_ssize_t tp_frees;
-    Py_ssize_t tp_maxalloc;
+    int tp_allocs;
+    int tp_frees;
+    int tp_maxalloc;
     struct _typeobject *tp_next;
 #endif
 } PyTypeObject;
