@@ -19,7 +19,7 @@
          & ((1 << MCACHE_SIZE_EXP) - 1))
 
 #define MCACHE_HASH_METHOD(type, name)                                  \
-        MCACHE_HASH((type)->tp_version_tag,                     \
+        MCACHE_HASH(0,                     \
                     ((PyStringObject *)(name))->ob_shash)
 #define MCACHE_CACHEABLE_NAME(name)                                     \
         PyString_CheckExact(name) &&                            \
@@ -162,48 +162,49 @@ type_mro_modified(PyTypeObject *type, PyObject *bases) {
 static int
 assign_version_tag(PyTypeObject *type)
 {
-    /* Ensure that the tp_version_tag is valid and set
-       Py_TPFLAGS_VALID_VERSION_TAG.  To respect the invariant, this
-       must first be done on all super classes.  Return 0 if this
-       cannot be done, 1 if Py_TPFLAGS_VALID_VERSION_TAG.
-    */
-    Py_ssize_t i, n;
-    PyObject *bases;
-
-    if (PyType_HasFeature(type, Py_TPFLAGS_VALID_VERSION_TAG))
-        return 1;
-    if (!PyType_HasFeature(type, Py_TPFLAGS_HAVE_VERSION_TAG))
-        return 0;
-    if (!PyType_HasFeature(type, Py_TPFLAGS_READY))
-        return 0;
-
-    type->tp_version_tag = next_version_tag++;
-    /* for stress-testing: next_version_tag &= 0xFF; */
-
-    if (type->tp_version_tag == 0) {
-        /* wrap-around or just starting Python - clear the whole
-           cache by filling names with references to Py_None.
-           Values are also set to NULL for added protection, as they
-           are borrowed reference */
-        for (i = 0; i < (1 << MCACHE_SIZE_EXP); i++) {
-            method_cache[i].value = NULL;
-            Py_INCREF(Py_None);
-            Py_XSETREF(method_cache[i].name, Py_None);
-        }
-        /* mark all version tags as invalid */
-        PyType_Modified(&PyBaseObject_Type);
-        return 1;
-    }
-    bases = type->tp_bases;
-    n = PyTuple_GET_SIZE(bases);
-    for (i = 0; i < n; i++) {
-        PyObject *b = PyTuple_GET_ITEM(bases, i);
-        assert(PyType_Check(b));
-        if (!assign_version_tag((PyTypeObject *)b))
-            return 0;
-    }
-    type->tp_flags |= Py_TPFLAGS_VALID_VERSION_TAG;
-    return 1;
+    return 0;
+//    /* Ensure that the tp_version_tag is valid and set
+//       Py_TPFLAGS_VALID_VERSION_TAG.  To respect the invariant, this
+//       must first be done on all super classes.  Return 0 if this
+//       cannot be done, 1 if Py_TPFLAGS_VALID_VERSION_TAG.
+//    */
+//    Py_ssize_t i, n;
+//    PyObject *bases;
+//
+//    if (PyType_HasFeature(type, Py_TPFLAGS_VALID_VERSION_TAG))
+//        return 1;
+//    if (!PyType_HasFeature(type, Py_TPFLAGS_HAVE_VERSION_TAG))
+//        return 0;
+//    if (!PyType_HasFeature(type, Py_TPFLAGS_READY))
+//        return 0;
+//
+//    type->tp_version_tag = next_version_tag++;
+//    /* for stress-testing: next_version_tag &= 0xFF; */
+//
+//    if (type->tp_version_tag == 0) {
+//        /* wrap-around or just starting Python - clear the whole
+//           cache by filling names with references to Py_None.
+//           Values are also set to NULL for added protection, as they
+//           are borrowed reference */
+//        for (i = 0; i < (1 << MCACHE_SIZE_EXP); i++) {
+//            method_cache[i].value = NULL;
+//            Py_INCREF(Py_None);
+//            Py_XSETREF(method_cache[i].name, Py_None);
+//        }
+//        /* mark all version tags as invalid */
+//        PyType_Modified(&PyBaseObject_Type);
+//        return 1;
+//    }
+//    bases = type->tp_bases;
+//    n = PyTuple_GET_SIZE(bases);
+//    for (i = 0; i < n; i++) {
+//        PyObject *b = PyTuple_GET_ITEM(bases, i);
+//        assert(PyType_Check(b));
+//        if (!assign_version_tag((PyTypeObject *)b))
+//            return 0;
+//    }
+//    type->tp_flags |= Py_TPFLAGS_VALID_VERSION_TAG;
+//    return 1;
 }
 
 
@@ -2533,7 +2534,7 @@ _PyType_Lookup(PyTypeObject *type, PyObject *name)
         PyType_HasFeature(type, Py_TPFLAGS_VALID_VERSION_TAG)) {
         /* fast path */
         h = MCACHE_HASH_METHOD(type, name);
-        if (method_cache[h].version == type->tp_version_tag &&
+        if (method_cache[h].version == 0 &&
             method_cache[h].name == name) {
 #if MCACHE_STATS
             method_cache_hits++;
@@ -2570,7 +2571,7 @@ _PyType_Lookup(PyTypeObject *type, PyObject *name)
 
     if (MCACHE_CACHEABLE_NAME(name) && assign_version_tag(type)) {
         h = MCACHE_HASH_METHOD(type, name);
-        method_cache[h].version = type->tp_version_tag;
+        method_cache[h].version = 0;
         method_cache[h].value = res;  /* borrowed */
         Py_INCREF(name);
         assert(((PyStringObject *)(name))->ob_shash != -1);

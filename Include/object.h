@@ -77,7 +77,7 @@ whose size is determined when the object is allocated.
 /* PyObject_HEAD defines the initial segment of every PyObject. */
 #define PyObject_HEAD                   \
     _PyObject_HEAD_EXTRA                \
-    Py_ssize_t ob_refcnt;               \
+    int ob_refcnt;               \
     struct _typeobject *ob_type;
 
 #define PyObject_HEAD_INIT(type)        \
@@ -369,7 +369,7 @@ typedef struct _typeobject {
     richcmpfunc tp_richcompare;
 
     /* weak reference enabler */
-    Py_ssize_t tp_weaklistoffset;
+    long tp_weaklistoffset;
 
     /* Added in release 2.2 */
     /* Iterators */
@@ -384,7 +384,7 @@ typedef struct _typeobject {
     PyObject *tp_dict;
     descrgetfunc tp_descr_get;
     descrsetfunc tp_descr_set;
-    Py_ssize_t tp_dictoffset;
+    long tp_dictoffset;
     initproc tp_init;
     allocfunc tp_alloc;
     newfunc tp_new;
@@ -397,15 +397,11 @@ typedef struct _typeobject {
     PyObject *tp_weaklist;
     destructor tp_del;
 
-    /* Type attribute cache version tag. Added in version 2.6 */
-    unsigned int tp_version_tag;
-
 #ifdef COUNT_ALLOCS
     /* these must be last and never explicitly initialized */
     Py_ssize_t tp_allocs;
     Py_ssize_t tp_frees;
     Py_ssize_t tp_maxalloc;
-    struct _typeobject *tp_prev;
     struct _typeobject *tp_next;
 #endif
 } PyTypeObject;
